@@ -3,21 +3,21 @@ package ricardosornosa.a2025_2026dam2bpmdmlistacompra;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
-import com.google.android.material.snackbar.Snackbar;
-
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 
+import ricardosornosa.a2025_2026dam2bpmdmlistacompra.adapters.ProductoAdapter;
 import ricardosornosa.a2025_2026dam2bpmdmlistacompra.databinding.ActivityMainBinding;
 import ricardosornosa.a2025_2026dam2bpmdmlistacompra.models.ProductoModel;
 
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,6 +29,8 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private ArrayList<ProductoModel> productoList;
+    private ProductoAdapter adapter;
+    private RecyclerView.LayoutManager lm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +40,13 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(binding.toolbar);
 
         productoList = new ArrayList<>();
+        adapter = new ProductoAdapter(
+                productoList, R.layout.producto_view_model, this
+        );
+        lm = new LinearLayoutManager(this);
+
+        binding.contentMain.contenedorMain.setAdapter(adapter);
+        binding.contentMain.contenedorMain.setLayoutManager(lm);
 
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -49,15 +58,15 @@ public class MainActivity extends AppCompatActivity {
 
     private AlertDialog crearProducto() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Agregar producto a la cesta");
+        builder.setTitle(R.string.titulo_alert_crear);
         builder.setCancelable(false);
 
-        View productoViewmodel = LayoutInflater.from(this).inflate(R.layout.producto_view_model, null);
-        EditText txtNombre = productoViewmodel.findViewById(R.id.txtNombreProductoViewModel);
-        EditText txtCantidad = productoViewmodel.findViewById(R.id.txtCantidadProductoViewModel);
-        EditText txtImporte = productoViewmodel.findViewById(R.id.txtImporteProductoViewModel);
-        TextView lblTotal = productoViewmodel.findViewById(R.id.lblTotalProductoViewModel);
-        builder.setView(productoViewmodel);
+        View productoViewAlert = LayoutInflater.from(this).inflate(R.layout.producto_view_alert, null);
+        EditText txtNombre = productoViewAlert.findViewById(R.id.txtNombreProductoViewAlert);
+        EditText txtCantidad = productoViewAlert.findViewById(R.id.txtCantidadProductoViewAlert);
+        EditText txtImporte = productoViewAlert.findViewById(R.id.txtImporteProductoViewAlert);
+        TextView lblTotal = productoViewAlert.findViewById(R.id.lblTotalProductoViewAlert);
+        builder.setView(productoViewAlert);
 
         TextWatcher textWatcher = new TextWatcher() {
             @Override
@@ -90,8 +99,8 @@ public class MainActivity extends AppCompatActivity {
         txtCantidad.addTextChangedListener(textWatcher);
         txtImporte.addTextChangedListener(textWatcher);
 
-        builder.setNegativeButton("CANCELAR", null);
-        builder.setPositiveButton("AGREGAR", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton(R.string.negativo_alert_crear, null);
+        builder.setPositiveButton(R.string.positivo_alert_crear, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String nombre = txtNombre.getText().toString();
@@ -104,11 +113,28 @@ public class MainActivity extends AppCompatActivity {
                             Integer.parseInt(cantidadS),
                             Float.parseFloat(importeS)
                     );
-                    productoList.add(p);
+                    productoList.add(0, p);
+                    adapter.notifyItemInserted(0);
                 }
             }
         });
 
         return builder.create();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable(getString(R.string.id_lista), productoList);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        ArrayList<ProductoModel> aux =
+                (ArrayList<ProductoModel>)
+                        savedInstanceState.getSerializable(getString(R.string.id_lista));
+        productoList.addAll(aux);
+        adapter.notifyItemRangeInserted(0, productoList.size());
     }
 }
